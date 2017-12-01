@@ -1,9 +1,26 @@
 import socket
 import boto3 #not default, needs to pip install
 from multiprocessing import Pool
-NUM_THREADS=40  #number of threads to do dns queries with, this is the slow part
+import sqlite3
+import time
+NUM_THREADS=30  #number of threads to do dns queries with, this is the slow part
 FILE_NAME='queries.log'
+DB='test.db'
 
+"""lets make a db test"""
+conn = sqlite3.connect('example.db')
+"""do we need to seed it?"""
+c = conn.cursor()
+try:
+    c.execute("SELECT * from dummy")
+except:
+    print "first time running, setting up!"
+    c.execute('''CREATE TABLE dummy (first_run)''')
+    c.execute('''CREATE TABLE cache (dns,date)''')
+    c.execute('''CREATE TABLE findings (dns,date)''')
+    c.execute("INSERT INTO dummy VALUES ('good')")
+    conn.commit()
+"""We now have a working DB"""
 
 """
 This will look for the s3 bucket
@@ -18,6 +35,8 @@ def try_s3(bucket_name):
     s3 = boto3.client('s3')
     try:
         result = s3.list_objects(Bucket=bucket_name)
+        c=conn.cursor()
+        c.execute("INSERT INTO findings VALUES (?,?)",(bucket_name,int(time.time())))
         return True
     except:
         return False
@@ -69,9 +88,15 @@ Returns: a array with all domain names
 """
 def get_queries(fi):
     domain_list=[]
+    c=conn.cursor()
     for line in fi:
-        if not (line in domain_list):
-            domain_list.append(line.split()[6])
+        dns=line.split()[6]
+        c.execute('SELECT * FROM cache WHERE dns=?',(dns,))
+        a = c.fetchone()
+        if  (a==None):
+            c.execute("INSERT INTO cache VALUES (?,?)",(dns,int(time.time())))
+            domain_list.append(dns)
+            conn.commit()
     return domain_list
 
 """
@@ -115,6 +140,6 @@ if __name__ == '__main__':
     for i in results:
         if i != False:
             name = make_s3name(i)
-            if try_s3(name):
-                print name
+            try_s3(name)
+                #print name
 

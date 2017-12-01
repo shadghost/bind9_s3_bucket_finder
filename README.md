@@ -2,8 +2,11 @@
 This will look at bind9 dns query logs and try to find open s3 buckets
 ## Requirements:
 Bind9 as caching server
+
 boto3: pip install boto3
+
 aws cli: pip install awscli
+
 ## Installing bind9 as cache server
 ### Ubuntu
 #### prerecs
