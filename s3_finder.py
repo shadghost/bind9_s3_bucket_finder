@@ -1,14 +1,20 @@
+#!/bin/bash python
 import socket
 import boto3 #not default, needs to pip install
 from multiprocessing import Pool
 import sqlite3
 import time
-NUM_THREADS=30  #number of threads to do dns queries with, this is the slow part
-FILE_NAME='queries.log'
-DB='test.db'
+import s3_config as cfg
+
+"""
+Import things from settings file
+"""
+NUM_THREADS=cfg.settings['NUM_THREADS']  #number of threads to do dns queries with, this is the slow part
+FILE_NAME=cfg.settings['FILE_NAME']
+DB=cfg.settings['DATABASE_LOCATION']
 
 """lets make a db test"""
-conn = sqlite3.connect('example.db')
+conn = sqlite3.connect(DB)
 """do we need to seed it?"""
 c = conn.cursor()
 try:

@@ -5,7 +5,10 @@ Bind9 as caching server
 
 boto3: pip install boto3
 
-aws cli: pip install awscli
+aws cli: pip install awscli 
+
+### AWS
+Configure aws with aws configure from cli, add in access keys
 
 ## Installing bind9 as cache server
 ### Ubuntu
@@ -22,7 +25,13 @@ forwarders {
 ```
 
 Now we need to add logging, we can enable all logging or just dns queries
+
 Add the following to the end of named.conf:
+
+`include "/etc/named/named.conf.logging";`
+
+Make a new file `/etc/named/named.conf.logging` and add the following: 
+
 
 #### all logging
 ```
@@ -145,9 +154,53 @@ logging {
 };
 ```
 
+Next, add logging directory 
+
+```
+mkdir /var/log/named
+chown bind /var/log/named
+```
+
+Now restart the service and check the status: 
+```
+service bind9 restart
+service bind9 status
+
+```
+
+If this returns active / running we need to check that DNS resolves: `nslookup google.com 127.0.0.1`
+If all checks clear, change router or computers dns to point at the cache server
+
+###Log rotation:
+
+We will be using logrotate to run the script, after modifying the prerotate to point to the area with the script
+add the following to `/etc/logrotate.d/bind`
+
+
+```
+/var/log/named/queries.log {
+  daily
+  missingok
+  rotate 7
+  compress
+  delaycompress
+  create 644 bind bind
+  ifempty
+  sharedscripts
+  prerotate
+    python /var/s3/s3_finder.py
+  endscript
+  postrotate
+   service bind9 restart
+  endscript
+}
+```
+Testing will be after configuration of tool
+
 ## Using
 ### First run:
-on command line `aws configure` to set up account with api keys
-edit the `NUM_THREADS` and `FILE_NAME` in s3_finder.py
-`./s3_finder.py`
+
+edit s3_config.py to point to good areas for database and logs (make absolute paths eg: /var/s3/database.db)
+run  `logrotate -f /var/logrotate.d/bind` to test if the script will rotate and execute
+
 
