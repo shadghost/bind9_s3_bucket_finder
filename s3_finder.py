@@ -1,4 +1,4 @@
-#!/bin/bash python
+#!/usr/bin/env python
 import socket
 import boto3 #not default, needs to pip install
 from multiprocessing import Pool
@@ -12,6 +12,7 @@ Import things from settings file
 NUM_THREADS=cfg.settings['NUM_THREADS']  #number of threads to do dns queries with, this is the slow part
 FILE_NAME=cfg.settings['FILE_NAME']
 DB=cfg.settings['DATABASE_LOCATION']
+DNS_LOCATION=cfg.settings['DNS_LOCATION']
 
 """lets make a db test"""
 conn = sqlite3.connect(DB)
@@ -42,7 +43,9 @@ def try_s3(bucket_name):
     try:
         result = s3.list_objects(Bucket=bucket_name)
         c=conn.cursor()
+        print bucket_name
         c.execute("INSERT INTO findings VALUES (?,?)",(bucket_name,int(time.time())))
+        conn.commit()
         return True
     except:
         return False
@@ -96,7 +99,7 @@ def get_queries(fi):
     domain_list=[]
     c=conn.cursor()
     for line in fi:
-        dns=line.split()[6]
+        dns=line.split()[DNS_LOCATION]
         c.execute('SELECT * FROM cache WHERE dns=?',(dns,))
         a = c.fetchone()
         if  (a==None):
