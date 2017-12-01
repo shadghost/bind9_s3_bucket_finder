@@ -9,7 +9,7 @@
 """
 
 settings = {'NUM_THREADS': 20,
-         'FILE_NAME':'queries_short.log',
+         'FILE_NAME':'queries.log',
          'DATABASE_LOCATION':'queries_new.db',
-        'DNS_LOCATION': 0 }
+        'DNS_LOCATION': 6 }
 
